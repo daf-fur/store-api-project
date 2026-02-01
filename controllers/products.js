@@ -1,15 +1,12 @@
 const Product = require("../models/product");
 
 const getAllProductsStatic = async (req, res) => {
-  const search = "ab";
-  const products = await Product.find({
-    name: { $regex: search, $options: "i" },
-  });
+  const products = await Product.find({}).sort("-name price"); // chain the sort with the find to sort the data
   res.status(200).json({ products, nbHits: products.length });
 };
 
 const getAllProducts = async (req, res) => {
-  const { featured, company, name } = req.query;
+  const { featured, company, name, sort } = req.query;
   const queryObject = {}; // queryObject will have whatever value we passed in
 
   if (featured) {
@@ -22,11 +19,19 @@ const getAllProducts = async (req, res) => {
   }
 
   if (name) {
-    queryObject.name = name;
+    queryObject.name = { $regex: name, $options: "i" };
   }
 
   console.log(queryObject);
-  const products = await Product.find(queryObject); // we have access to query and use that to basically find the product in the database with whatever's matching in the query string
+  let result = Product.find(queryObject); // we have access to query and use that to basically find the product in the database with whatever's matching in the query string
+  if (sort) {
+    const sortList = sort.split(',').join(' ');
+    result = result.sort(sortList);
+  }
+  else {
+    result = result.sort('createdAt')
+  }
+  const products = await result;
   res.status(200).json({ products, nbHits: products.length });
 };
 
